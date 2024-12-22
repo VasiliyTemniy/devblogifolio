@@ -14,17 +14,18 @@ datasource db {
 
 // Could be divided to User and Profile to prevent optional fields from being in the main table
 model User {
-  id         String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  phone      String?     @unique @db.VarChar(32)
-  username   String      @unique @db.VarChar(64)
-  email      String      @unique @db.VarChar(64)
-  avatarUrl  String?     @db.Text
-  createdAt  DateTime    @default(now()) @db.Timestamp(6)
-  updatedAt  DateTime    @updatedAt @db.Timestamp(6)
-  bannedAt   DateTime?   @db.Timestamp(6)
-  deletedAt  DateTime?   @db.Timestamp(6)
-  articles   Article[]
-  hostedApps HostedApp[]
+  id          String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  phone       String?     @unique @db.VarChar(32)
+  username    String      @unique @db.VarChar(64)
+  email       String      @unique @db.VarChar(64)
+  avatarUrl   String?     @db.Text
+  blockReason String?     @db.Text
+  createdAt   DateTime    @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime    @updatedAt @db.Timestamp(6)
+  blockedAt   DateTime?   @db.Timestamp(6)
+  deletedAt   DateTime?   @db.Timestamp(6)
+  articles    Article[]
+  hostedApps  HostedApp[]
 }
 
 model Article {
