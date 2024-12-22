@@ -2,19 +2,108 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-    provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [uuidOssp(map: "uuid-ossp")]
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+// Could be divided to User and Profile to prevent optional fields from being in the main table
+model User {
+  id         String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  phone      String?     @unique @db.VarChar(32)
+  username   String      @unique @db.VarChar(64)
+  email      String      @unique @db.VarChar(64)
+  avatarUrl  String?     @db.Text
+  createdAt  DateTime    @default(now()) @db.Timestamp(6)
+  updatedAt  DateTime    @updatedAt @db.Timestamp(6)
+  bannedAt   DateTime?   @db.Timestamp(6)
+  deletedAt  DateTime?   @db.Timestamp(6)
+  articles   Article[]
+  hostedApps HostedApp[]
+}
 
-    @@index([name])
+model Article {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  title       String    @db.VarChar(128)
+  description String    @db.Text
+  mdUrl       String    @db.Text
+  likes       Int       @default(0)
+  visits      Int       @default(0)
+  tags        String[]
+  authorId    String    @db.Uuid
+  categoryId  String    @db.Uuid
+  createdAt   DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamp(6)
+  author      User      @relation(fields: [authorId], references: [id])
+  pictures    Picture[]
+  comments    Comment[]
+  category    Category  @relation(fields: [categoryId], references: [id])
+}
+
+model Category {
+  id          String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  title       String      @db.VarChar(128)
+  description String      @db.Text
+  parentId    String?     @db.Uuid
+  createdAt   DateTime    @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime    @updatedAt @db.Timestamp(6)
+  parent      Category?   @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children    Category[]  @relation("CategoryToCategory")
+  articles    Article[]
+  hostedApps  HostedApp[]
+}
+
+model Picture {
+  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  url         String     @db.Text
+  mimeType    String     @db.Text
+  filename    String     @db.Text
+  path        String     @db.Text
+  size        Int        @default(0)
+  articleId   String?    @db.Uuid
+  commentId   String?    @db.Uuid
+  hostedAppId String?    @db.Uuid
+  createdAt   DateTime   @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime   @updatedAt @db.Timestamp(6)
+  article     Article?   @relation(fields: [articleId], references: [id])
+  comment     Comment?   @relation(fields: [commentId], references: [id])
+  hostedApp   HostedApp? @relation(fields: [hostedAppId], references: [id])
+}
+
+model Comment {
+  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  content     String     @db.Text
+  articleId   String?    @db.Uuid
+  hostedAppId String?    @db.Uuid
+  parentId    String?    @db.Uuid
+  createdAt   DateTime   @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime   @updatedAt @db.Timestamp(6)
+  pictures    Picture[]
+  parent      Comment?   @relation("CommentToComment", fields: [parentId], references: [id])
+  comments    Comment[]  @relation("CommentToComment")
+  article     Article?   @relation(fields: [articleId], references: [id])
+  hostedApp   HostedApp? @relation(fields: [hostedAppId], references: [id])
+}
+
+model HostedApp {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name       String    @db.VarChar(128)
+  url        String    @db.Text
+  iconUrl    String    @db.Text
+  likes      Int       @default(0)
+  visits     Int       @default(0)
+  tags       String[]
+  authorId   String    @db.Uuid
+  categoryId String    @db.Uuid
+  createdAt  DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt  DateTime  @updatedAt @db.Timestamp(6)
+  comments   Comment[]
+  pictures   Picture[]
+  author     User      @relation(fields: [authorId], references: [id])
+  category   Category  @relation(fields: [categoryId], references: [id])
 }
