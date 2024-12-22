@@ -77,18 +77,20 @@ model Picture {
 }
 
 model Comment {
-  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  content     String     @db.Text
-  articleId   String?    @db.Uuid
-  hostedAppId String?    @db.Uuid
-  parentId    String?    @db.Uuid
-  createdAt   DateTime   @default(now()) @db.Timestamp(6)
-  updatedAt   DateTime   @updatedAt @db.Timestamp(6)
-  pictures    Picture[]
-  parent      Comment?   @relation("CommentToComment", fields: [parentId], references: [id])
-  comments    Comment[]  @relation("CommentToComment")
-  article     Article?   @relation(fields: [articleId], references: [id])
-  hostedApp   HostedApp? @relation(fields: [hostedAppId], references: [id])
+  id            String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  content       String     @db.Text
+  blockedReason String?    @db.Text
+  articleId     String?    @db.Uuid
+  hostedAppId   String?    @db.Uuid
+  parentId      String?    @db.Uuid
+  blockedAt     DateTime?  @db.Timestamp(6)
+  createdAt     DateTime   @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime   @updatedAt @db.Timestamp(6)
+  pictures      Picture[]
+  parent        Comment?   @relation("CommentToComment", fields: [parentId], references: [id])
+  comments      Comment[]  @relation("CommentToComment")
+  article       Article?   @relation(fields: [articleId], references: [id])
+  hostedApp     HostedApp? @relation(fields: [hostedAppId], references: [id])
 }
 
 model HostedApp {
