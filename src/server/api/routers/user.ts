@@ -2,10 +2,16 @@ import { z } from "zod";
 
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 
-export const postRouter = createTRPCRouter({
+export const userRouter = createTRPCRouter({
   create: publicProcedure
-    .input(z.object({ phone: z.string().optional(), username: z.string(), email: z.string().email(), avatarUrl: z.string().optional() }))
+    .input(z.object({
+      phone: z.string().optional(),
+      username: z.string(),
+      email: z.string().email(),
+      avatarUrl: z.string().optional()
+    }))
     .mutation(async ({ ctx, input }) => {
+      // Add auth app calls to store password
       return ctx.db.user.create({
         data: {
           phone: input.phone,
@@ -17,8 +23,15 @@ export const postRouter = createTRPCRouter({
     }),
 
   update: publicProcedure
-    .input(z.object({ id: z.string().uuid(), phone: z.string().optional(), username: z.string().optional(), email: z.string().email().optional(), avatarUrl: z.string().optional() }))
+    .input(z.object({
+      id: z.string().uuid(),
+      phone: z.string().optional(),
+      username: z.string().optional(),
+      email: z.string().email().optional(),
+      avatarUrl: z.string().optional()
+    }))
     .mutation(async ({ ctx, input }) => {
+      // Add auth app calls to update stored password
       const data: {
         phone?: string;
         username?: string;
@@ -112,7 +125,11 @@ export const postRouter = createTRPCRouter({
     }),
 
   getBy: publicProcedure
-    .input(z.object({ email: z.string().email().optional(), username: z.string().optional(), phone: z.string().optional() }))
+    .input(z.object({
+      email: z.string().email().optional(),
+      username: z.string().optional(),
+      phone: z.string().optional()
+    }))
     .query(({ ctx, input }) => {
       const where: { email?: string; username?: string; phone?: string } = {};
       if (!input.email && !input.username && !input.phone) return null;
@@ -135,6 +152,12 @@ export const postRouter = createTRPCRouter({
           value: z.string(),
         })
       ).optional(),
+      filter: z.array(
+        z.object({
+          field: z.enum(["email", "username", "phone"]),
+          value: z.string(),
+        })
+      ),
       order: z.array(
         z.object({
           field: z.enum(["email", "username", "phone", "createdAt", "updatedAt"]),
@@ -143,18 +166,28 @@ export const postRouter = createTRPCRouter({
       ).optional(),
     }))
     .query(({ ctx, input }) => {
+
       const where: {
-        email?: string;
-        username?: string;
-        phone?: string;
+        email?: string | { contains: string };
+        username?: string | { contains: string };
+        phone?: string | { contains: string };
       } = {};
-      if (input.search) {
-        input.search.forEach((searchItem) => {
-          if (searchItem.field === "email") where.email = searchItem.value;
-          if (searchItem.field === "username") where.username = searchItem.value;
-          if (searchItem.field === "phone") where.phone = searchItem.value;
-        });
+
+      if (input.filter) {
+        for (const filterItem of input.filter) {
+          where[filterItem.field] = filterItem.value;
+        }
       }
+      if (input.search) {
+        for (const searchItem of input.search) {
+          // Skip search for fields that are filtered
+          if (where[searchItem.field]) {
+            continue;
+          }
+          where[searchItem.field] = { contains: searchItem.value };
+        }
+      }
+
       const orderBy: {
         email?: "asc" | "desc";
         username?: "asc" | "desc";
